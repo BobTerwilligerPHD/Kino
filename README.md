@@ -1,20 +1,16 @@
-<<<<<<< HEAD
-# React + Vite
+<b><u>Kino</b></u>
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An AI-powered movie recommendation app that helps you discover your next favorite film through natural conversational search.
 
-Currently, two official plugins are available:
+## Features
+- AI-Powered Recommendations: Get personalized movie suggestions based on natural language prompts, moods, genres, or obscure descriptions.
+  
+- Interactive Chat Interface: Seamless conversational UI to refine recommendations on the fly.
+- Dynamic Movie Cards: View detailed movie metadata, posters, and details powered by The Movie Database (TMDB).
+  
+- Modern UI: Built with Vite, React, and tailored styling for a fast, responsive user experience.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-=======
-# Kino
->>>>>>> 9a8761b91922c657d18d507b0000ec89dd3bc11e
+## Tech Stack
+* Frontend: React, Vite, JavaScript, CSS
+* API Integration: TMDB API (The Movie Database)
+* Icons & Assets: Custom SVG iconography and modern asset pipelines
