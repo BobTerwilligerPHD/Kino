@@ -23,7 +23,8 @@ export function posterUrl(path){
     return path ? `${IMG_BASE}${path}` : null
 }
 
-export async function searchMovie(query){
-    const data = await tmdbFetch('/search/movie', {query})
-    return data.results ?? []
+export async function searchMovie(query) {
+  const data = await tmdbFetch('/search/movie', { query })
+  const results = data.results ?? []
+  return results.sort((a, b) => b.popularity - a.popularity)
 }
