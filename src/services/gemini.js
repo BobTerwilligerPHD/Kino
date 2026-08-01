@@ -4,7 +4,7 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemi
 const SYSTEM_INSTRUCTION = `You classify a movie chatbot request into JSON. Respond with ONLY raw JSON, no markdown, no code fences.
 
 Possible shapes:
-{"type": "genre", "genre": "<one of: action, comedy, horror, drama, thriller, romance, science fiction, fantasy, animation, documentary, crime, mystery, war, western, family, music, history, adventure>"}
+{"type": "genre", "genre": "<one of: action, comedy, horror, drama, thriller, romance, science fiction, fantasy, animation, documentary, crime, mystery, war, western, family, music, history, adventure>", "keyword": "<optional single word/short phrase capturing a more specific theme or vibe, e.g. 'stoner', 'heist', 'time travel', 'revenge', 'zombie' — omit this field entirely if the request is just a plain genre with no specific theme>"}
 {"type": "similar", "title": "<a movie title mentioned by the user>"}
 {"type": "trending"}
 {"type": "top_rated"}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import MessageBubble from './MessageBubble'
-import { searchMovie, discoverByGenre, getGenreMap, getRecommendations, getTrending, getTopRated } from '../services/tmdb'
+import { searchMovie, discoverByGenre, getGenreMap, getRecommendations, getTrending, getTopRated, findKeywordId } from '../services/tmdb'
 import { classifyIntent } from '../services/gemini'
 import MotifIcon from './MotifIcon'
 
@@ -81,8 +81,15 @@ async function buildReply(intent, trimmed) {
             if (!genreId) {
                 return { sender: 'bot', text: `I couldn't match "${intent.genre}" to a genre.` }
             }
-            const movies = await discoverByGenre(genreId)
-            return { sender: 'bot', text: `Here's some ${intent.genre} picks:`, movies: movies.slice(0, 6) }
+
+            let keywordId = null
+            if (intent.keyword) {
+                keywordId = await findKeywordId(intent.keyword)
+            }
+
+            const movies = await discoverByGenre(genreId, keywordId)
+            const label = intent.keyword ? `${intent.keyword} ${intent.genre}` : intent.genre
+            return { sender: 'bot', text: `Here's some ${label} picks:`, movies: movies.slice(0, 6) }
         }
 
         case 'similar': {
@@ -109,3 +116,4 @@ async function buildReply(intent, trimmed) {
         }
     }
 }
+

@@ -40,13 +40,19 @@ export async function getGenreMap() {
     return genreCache
 }
 
-export async function discoverByGenre(genreId){
+export async function discoverByGenre(genreId, keywordId){
     const data = await tmdbFetch('/discover/movie', {
         with_genres: genreId,
+        with_keywords: keywordId,
         sort_by: 'popularity.desc',
-        'vote_count.gte': 100,
+        'vote_count.gte': 50,
     })
     return data.results ?? []
+}
+
+export async function findKeywordId(term) {
+  const data = await tmdbFetch('/search/keyword', { query: term })
+  return data.results?.[0]?.id ?? null
 }
 
 export async function getRecommendations(movieId){
