@@ -28,3 +28,38 @@ export async function searchMovie(query) {
   const results = data.results ?? []
   return results.sort((a, b) => b.popularity - a.popularity)
 }
+
+let genreCache = null
+export async function getGenreMap() {
+    if (genreCache) return genreCache
+    const data = await tmdbFetch('/genre/movie/list')
+    genreCache = {}
+    data.genres.forEach((g) => {
+        genreCache[g.name.toLowerCase()] = g.id
+    })
+    return genreCache
+}
+
+export async function discoverByGenre(genreId){
+    const data = await tmdbFetch('/discover/movie', {
+        with_genres: genreId,
+        sort_by: 'popularity.desc',
+        'vote_count.gte': 100,
+    })
+    return data.results ?? []
+}
+
+export async function getRecommendations(movieId){
+    const data = await tmdbFetch(`/movie/${movieId}/recommendations`)
+    return data.results ?? []
+}
+
+export async function getTrending(){
+    const data = await tmdbFetch('/trending/movie/week')
+    return data.results ?? []
+}
+
+export async function getTopRated() {
+    const data = await tmdbFetch('/movie/top_rated')
+    return data.results ?? []
+}

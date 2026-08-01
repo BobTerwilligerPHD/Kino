@@ -84,6 +84,12 @@ body{
   gap: 1rem;
 }
 
+.chat-window__messages--active {
+  justify-content: flex-start;
+  align-items: stretch;
+  text-align: left;
+}
+
 
 .chat-window__input {
   display: flex;
@@ -211,3 +217,31 @@ body{
   overflow: hidden;
 }
 
+.chat-window__messages--active .message {
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-window__messages--active .message--user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.message--user p {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 0.6rem 1rem;
+  margin: 0;
+}
+
+.chat-window__messages--active .message--bot {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.message--bot p {
+  margin: 0;
+  padding: 0;
+}
