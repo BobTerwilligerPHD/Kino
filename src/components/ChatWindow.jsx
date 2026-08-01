@@ -8,6 +8,12 @@ import { Loader2 } from 'lucide-react'
 let idCounter = 0
 const nextId = () => (idCounter += 1)
 
+const MORE_PHRASES = ['more', 'another', 'more suggestions', 'give me more', 'show more', 'anything else']
+function isObviouslyMore(text) {
+    const normalized = text.toLowerCase().trim()
+    return MORE_PHRASES.includes(normalized)
+}
+
 export default function ChatWindow() {
     const [messages, setMessages] = useState ([
         { id: nextId(), sender: 'bot', text: "Hey I'm MovieBot, Need a suggestion ?"}
@@ -33,7 +39,7 @@ async function handleSend(e) {
         setIsLoading(true)
 
         try {
-            const intent = await classifyIntent(trimmed)
+            const intent = isObviouslyMore(trimmed) ? { type: 'more' } : await classifyIntent(trimmed)
             const { message, context } = await buildReply(intent, trimmed, lastContext)
             setMessages((prev) => [...prev, { id: nextId(), ...message }])
             setLastContext(context)
@@ -86,7 +92,7 @@ async function buildReply(intent, trimmed, lastContext) {
             const shown = movies.slice(0, 6)
             return {
                 message: { sender: 'bot', text: "Here's what's trending this week:", movies: shown },
-                context: { type: 'trending', page: 1, shownIds: shown.map((m) => m.id) },
+                context: { type: 'trending', page: 1, pool: movies.slice(6), shownIds: shown.map((m) => m.id) },
             }
         }
 
@@ -95,7 +101,7 @@ async function buildReply(intent, trimmed, lastContext) {
             const shown = movies.slice(0, 6)
             return {
                 message: { sender: 'bot', text: 'Some of the highest rated movies on TMDB:', movies: shown },
-                context: { type: 'top_rated', page: 1, shownIds: shown.map((m) => m.id) },
+                context: { type: 'top_rated', page: 1, pool: movies.slice(6), shownIds: shown.map((m) => m.id) },
             }
         }
 
@@ -116,7 +122,7 @@ async function buildReply(intent, trimmed, lastContext) {
             const label = intent.keyword ? `${intent.keyword} ${intent.genre}` : intent.genre
             return {
                 message: { sender: 'bot', text: `Here's some ${label} picks:`, movies: shown },
-                context: { type: 'genre', genreId, keywordId, label, page: 1, shownIds: shown.map((m) => m.id) },
+                context: { type: 'genre', genreId, keywordId, label, page: 1, pool: movies.slice(6), shownIds: shown.map((m) => m.id) },
             }
         }
 
@@ -133,7 +139,7 @@ async function buildReply(intent, trimmed, lastContext) {
             }
             return {
                 message: { sender: 'bot', text: `If you liked "${base.title}", try these:`, movies: shown },
-                context: { type: 'similar', movieId: base.id, label: base.title, page: 1, shownIds: shown.map((m) => m.id) },
+                context: { type: 'similar', movieId: base.id, label: base.title, page: 1, pool: movies.slice(6), shownIds: shown.map((m) => m.id) },
             }
         }
 
@@ -153,21 +159,34 @@ async function buildReply(intent, trimmed, lastContext) {
     }
 }
 async function buildMoreReply(context) {
-    const nextPage = context.page + 1
-    let movies = []
+    const pool = context.pool ?? []
+    const unseenFromPool = pool.filter((m) => !context.shownIds.includes(m.id))
 
-    if (context.type === 'trending') {
-        movies = await getTrending(nextPage)
-    } else if (context.type === 'top_rated') {
-        movies = await getTopRated(nextPage)
-    } else if (context.type === 'genre') {
-        movies = await discoverByGenre(context.genreId, context.keywordId, nextPage)
-    } else if (context.type === 'similar') {
-        movies = await getRecommendations(context.movieId, nextPage)
+    let shown = unseenFromPool.slice(0, 6)
+    let remainingPool = unseenFromPool.slice(6)
+    let nextPage = context.page
+
+    if (shown.length < 6) {
+        nextPage = context.page + 1
+        let freshMovies = []
+
+        if (context.type === 'trending') {
+            freshMovies = await getTrending(nextPage)
+        } else if (context.type === 'top_rated') {
+            freshMovies = await getTopRated(nextPage)
+        } else if (context.type === 'genre') {
+            freshMovies = await discoverByGenre(context.genreId, context.keywordId, nextPage)
+        } else if (context.type === 'similar') {
+            freshMovies = await getRecommendations(context.movieId, nextPage)
+        }
+
+        const newUnseen = freshMovies.filter(
+            (m) => !context.shownIds.includes(m.id) && !shown.some((s) => s.id === m.id)
+        )
+        const needed = 6 - shown.length
+        shown = [...shown, ...newUnseen.slice(0, needed)]
+        remainingPool = newUnseen.slice(needed)
     }
-
-    const fresh = movies.filter((m) => !context.shownIds.includes(m.id))
-    const shown = fresh.slice(0, 6)
 
     if (shown.length === 0) {
         return {
@@ -178,6 +197,11 @@ async function buildMoreReply(context) {
 
     return {
         message: { sender: 'bot', text: "Here's some more:", movies: shown },
-        context: { ...context, page: nextPage, shownIds: [...context.shownIds, ...shown.map((m) => m.id)] },
+        context: {
+            ...context,
+            page: nextPage,
+            pool: remainingPool,
+            shownIds: [...context.shownIds, ...shown.map((m) => m.id)],
+        },
     }
 }

@@ -1,5 +1,5 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent'
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent'
 
 const SYSTEM_INSTRUCTION = `You classify a movie chatbot request into JSON. Respond with ONLY raw JSON, no markdown, no code fences.
 
