@@ -8,9 +8,10 @@ Possible shapes:
 {"type": "similar", "title": "<a movie title mentioned by the user>"}
 {"type": "trending"}
 {"type": "top_rated"}
+{"type": "more"}
 {"type": "title_search", "title": "<whatever movie title the user seems to be searching for>"}
 
-Pick the single best match. If genuinely unclear, use title_search with your best guess at a title.`
+Pick the single best match. If the user is asking for additional results, another one, or more suggestions without giving new criteria, use "more". If genuinely unclear, use title_search with your best guess at a title.`
 
 export async function classifyIntent(message) {
     const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
