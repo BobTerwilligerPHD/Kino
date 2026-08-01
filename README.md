@@ -14,3 +14,6 @@ An AI-powered movie recommendation app that helps you discover your next favorit
 * Frontend: React, Vite, JavaScript, CSS
 * API Integration: TMDB API (The Movie Database)
 * Icons & Assets: Custom SVG iconography and modern asset pipelines
+
+## Link
+https://kino-ten-wheat.vercel.app/
