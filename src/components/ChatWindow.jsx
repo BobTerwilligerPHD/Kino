@@ -46,7 +46,7 @@ async function handleSend(e) {
         } catch (err) {
             setMessages((prev) => [
                 ...prev,
-                { id: nextId(), sender: 'bot', text: `Something went wrong: ${err.message}` },
+                { id: nextId(), sender: 'bot', text: friendlyErrorMessage(err) },
             ])
         } finally {
             setIsLoading(false)
@@ -79,6 +79,22 @@ async function handleSend(e) {
             </form>
         </div>
     )
+}
+
+function friendlyErrorMessage(err) {
+    const msg = err.message || ''
+
+    if (msg.includes('429')) {
+        return "I'm getting a lot of requests right now. Please try again in a few seconds."
+    }
+    if (msg.includes('Gemini')) {
+        return "I'm having trouble classifying your request. Please try again in a moment."
+    }
+
+    if (msg.includes('TMDB')) {
+        return "I'm having trouble fetching movie data. Please try again in a moment."
+    }
+    return "Something went wrong. Please try again in a moment."
 }
 
 async function buildReply(intent, trimmed, lastContext) {
