@@ -3,7 +3,7 @@ import MessageBubble from './MessageBubble'
 import { searchMovie, getTrending, getTopRated } from '../services/tmdb'
 import { classifyIntent } from '../services/gemini'
 import EmptyState from './EmptyState'
-import { Loader2 } from 'lucide-react'
+import SkeletonCard from './SkeletonCard'
 
 let idCounter = 0
 const nextId = () => (idCounter += 1)
@@ -68,7 +68,12 @@ async function handleSend(e) {
                 ))}
                 {isLoading && (
                     <div className="message message--bot">
-                        <Loader2 size={18} className="loading-spinner" />
+                        <div className="skeleton-text" />
+                        <div className="movie-grid">
+                            <SkeletonCard delay={0} />
+                            <SkeletonCard delay={0.15} />
+                            <SkeletonCard delay={0.3} />
+                        </div>
                     </div>
                 )}
 
