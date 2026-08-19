@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import MessageBubble from './MessageBubble'
-import { searchMovie, discoverByGenre, getGenreMap, getRecommendations, getTrending, getTopRated, findKeywordId } from '../services/tmdb'
+import { searchMovie, getTrending, getTopRated } from '../services/tmdb'
 import { classifyIntent } from '../services/gemini'
-import MotifIcon from './MotifIcon'
+import EmptyState from './EmptyState'
 import { Loader2 } from 'lucide-react'
 
 let idCounter = 0
@@ -15,12 +15,11 @@ function isObviouslyMore(text) {
 }
 
 export default function ChatWindow() {
-    const [messages, setMessages] = useState ([
-        { id: nextId(), sender: 'bot', text: "Hey I'm MovieBot, Need a suggestion ?"}
-    ])
+    const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [lastContext, setLastContext] = useState(null)
+    const [history, setHistory] = useState([])
 
     const messagesEndRef = useRef(null)
 
@@ -39,10 +38,18 @@ async function handleSend(e) {
         setIsLoading(true)
 
         try {
-            const intent = isObviouslyMore(trimmed) ? { type: 'more' } : await classifyIntent(trimmed)
+            const canFastPathMore = isObviouslyMore(trimmed) && ['trending', 'top_rated'].includes(lastContext?.type)
+            const intent = canFastPathMore ? { type: 'more' } : await classifyIntent(trimmed, history)
             const { message, context } = await buildReply(intent, trimmed, lastContext)
             setMessages((prev) => [...prev, { id: nextId(), ...message }])
             setLastContext(context)
+
+            const movieTitles = message.movies?.map((m) => m.title).join(', ')
+            setHistory((prev) => [
+                ...prev,
+                { role: 'user', text: trimmed },
+                { role: 'bot', text: movieTitles ? `${message.text} ${movieTitles}` : message.text },
+            ])
         } catch (err) {
             setMessages((prev) => [
                 ...prev,
@@ -54,8 +61,8 @@ async function handleSend(e) {
     }
     return (
         <div className="chat-window">
-            <div className={`chat-window__messages ${messages.length > 1 ? 'chat-window__messages--active' : ''}`}>
-                {messages.length === 1 && <MotifIcon />}
+            <div className={`chat-window__messages ${messages.length > 0 ? 'chat-window__messages--active' : ''}`}>
+                {messages.length === 0 && <EmptyState />}
                 {messages.map((msg) => (
                     <MessageBubble key={msg.id} message={msg} />
                 ))}
@@ -98,8 +105,22 @@ function friendlyErrorMessage(err) {
 }
 
 async function buildReply(intent, trimmed, lastContext) {
+    if (intent.type === 'more' && lastContext?.type === 'recommend') {
+        return {
+            message: { sender: 'bot', text: "I didn't catch new titles for that — try telling me what kind of thing you're after." },
+            context: lastContext,
+        }
+    }
+
     if (intent.type === 'more' && lastContext) {
         return buildMoreReply(lastContext)
+    }
+
+    if (intent.type === 'more') {
+        return {
+            message: { sender: 'bot', text: "More of what? Tell me what you're in the mood for and I'll take it from there." },
+            context: null,
+        }
     }
 
     switch (intent.type) {
@@ -107,7 +128,7 @@ async function buildReply(intent, trimmed, lastContext) {
             const movies = await getTrending(1)
             const shown = movies.slice(0, 6)
             return {
-                message: { sender: 'bot', text: "Here's what's trending this week:", movies: shown },
+                message: { sender: 'bot', text: intent.replyText || "Here's what's trending this week:", movies: shown },
                 context: { type: 'trending', page: 1, pool: movies.slice(6), shownIds: shown.map((m) => m.id) },
             }
         }
@@ -116,46 +137,35 @@ async function buildReply(intent, trimmed, lastContext) {
             const movies = await getTopRated(1)
             const shown = movies.slice(0, 6)
             return {
-                message: { sender: 'bot', text: 'Some of the highest rated movies on TMDB:', movies: shown },
+                message: { sender: 'bot', text: intent.replyText || 'Some of the highest rated movies on TMDB:', movies: shown },
                 context: { type: 'top_rated', page: 1, pool: movies.slice(6), shownIds: shown.map((m) => m.id) },
             }
         }
 
-        case 'genre': {
-            const genreMap = await getGenreMap()
-            const genreId = genreMap[intent.genre]
-            if (!genreId) {
-                return { message: { sender: 'bot', text: `I couldn't match "${intent.genre}" to a genre.` }, context: null }
+        case 'recommend': {
+            const titles = intent.titles ?? []
+            const resolved = await Promise.all(titles.map((t) => searchMovie(t.title, t.year)))
+
+            const shown = []
+            const seenIds = new Set()
+            for (const matches of resolved) {
+                const best = matches[0]
+                if (best && !seenIds.has(best.id)) {
+                    seenIds.add(best.id)
+                    shown.push(best)
+                }
             }
 
-            let keywordId = null
-            if (intent.keyword) {
-                keywordId = await findKeywordId(intent.keyword)
-            }
-
-            const movies = await discoverByGenre(genreId, keywordId, 1)
-            const shown = movies.slice(0, 6)
-            const label = intent.keyword ? `${intent.keyword} ${intent.genre}` : intent.genre
-            return {
-                message: { sender: 'bot', text: `Here's some ${label} picks:`, movies: shown },
-                context: { type: 'genre', genreId, keywordId, label, page: 1, pool: movies.slice(6), shownIds: shown.map((m) => m.id) },
-            }
-        }
-
-        case 'similar': {
-            const matches = await searchMovie(intent.title)
-            if (matches.length === 0) {
-                return { message: { sender: 'bot', text: `I couldn't find a movie called "${intent.title}".` }, context: null }
-            }
-            const base = matches[0]
-            const movies = await getRecommendations(base.id, 1)
-            const shown = movies.slice(0, 6)
             if (shown.length === 0) {
-                return { message: { sender: 'bot', text: `Found "${base.title}", but no recommendations came back for it.` }, context: null }
+                return {
+                    message: { sender: 'bot', text: intent.replyText || "I had some titles in mind but couldn't find them on TMDB." },
+                    context: null,
+                }
             }
+
             return {
-                message: { sender: 'bot', text: `If you liked "${base.title}", try these:`, movies: shown },
-                context: { type: 'similar', movieId: base.id, label: base.title, page: 1, pool: movies.slice(6), shownIds: shown.map((m) => m.id) },
+                message: { sender: 'bot', text: intent.replyText || "Here's what I'd suggest:", movies: shown.slice(0, 6) },
+                context: { type: 'recommend', shownIds: shown.map((m) => m.id) },
             }
         }
 
@@ -166,7 +176,7 @@ async function buildReply(intent, trimmed, lastContext) {
             return {
                 message: {
                     sender: 'bot',
-                    text: shown.length ? `Here's what I found for "${trimmed}":` : `Sorry, I couldn't find anything for "${trimmed}".`,
+                    text: shown.length ? (intent.replyText || `Here's what I found for "${trimmed}":`) : `Sorry, I couldn't find anything for "${trimmed}".`,
                     movies: shown,
                 },
                 context: null,
@@ -190,10 +200,6 @@ async function buildMoreReply(context) {
             freshMovies = await getTrending(nextPage)
         } else if (context.type === 'top_rated') {
             freshMovies = await getTopRated(nextPage)
-        } else if (context.type === 'genre') {
-            freshMovies = await discoverByGenre(context.genreId, context.keywordId, nextPage)
-        } else if (context.type === 'similar') {
-            freshMovies = await getRecommendations(context.movieId, nextPage)
         }
 
         const newUnseen = freshMovies.filter(

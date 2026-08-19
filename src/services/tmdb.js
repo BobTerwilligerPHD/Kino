@@ -23,42 +23,17 @@ export function posterUrl(path){
     return path ? `${IMG_BASE}${path}` : null
 }
 
-export async function searchMovie(query) {
-  const data = await tmdbFetch('/search/movie', { query })
-  const results = data.results ?? []
+export async function searchMovie(query, year) {
+  const data = await tmdbFetch('/search/movie', { query, primary_release_year: year })
+  let results = data.results ?? []
+
+  if (year && results.length === 0) {
+    // the year hint may be slightly off (Gemini misremembering) — retry without it
+    const fallback = await tmdbFetch('/search/movie', { query })
+    results = fallback.results ?? []
+  }
+
   return results.sort((a, b) => b.popularity - a.popularity)
-}
-
-let genreCache = null
-export async function getGenreMap() {
-    if (genreCache) return genreCache
-    const data = await tmdbFetch('/genre/movie/list')
-    genreCache = {}
-    data.genres.forEach((g) => {
-        genreCache[g.name.toLowerCase()] = g.id
-    })
-    return genreCache
-}
-
-export async function discoverByGenre(genreId, keywordId, page = 1){
-    const data = await tmdbFetch('/discover/movie', {
-        with_genres: genreId,
-        with_keywords: keywordId,
-        sort_by: 'popularity.desc',
-        'vote_count.gte': 50,
-        page,
-    })
-    return data.results ?? []
-}
-
-export async function findKeywordId(term) {
-  const data = await tmdbFetch('/search/keyword', { query: term })
-  return data.results?.[0]?.id ?? null
-}
-
-export async function getRecommendations(movieId, page = 1){
-    const data = await tmdbFetch(`/movie/${movieId}/recommendations`, { page })
-    return data.results ?? []
 }
 
 export async function getTrending(page = 1){

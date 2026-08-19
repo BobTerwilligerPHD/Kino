@@ -1,25 +1,30 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent'
 
-const SYSTEM_INSTRUCTION = `You classify a movie chatbot request into JSON. Respond with ONLY raw JSON, no markdown, no code fences.
+const SYSTEM_INSTRUCTION = `You are the brain behind Kino, a movie chatbot with deep film knowledge. Reply with ONLY raw JSON, no markdown, no fences:
+{"type": "<recommend|trending|top_rated|more|title_search>", "titles": "<for 'recommend': array of 3-4 objects {title, year}, REAL films you'd genuinely recommend, reasoned by mood/director/theme/similarity, never a genre bucket. Always include the correct release year — it disambiguates remakes/reused titles>", "title": "<for 'title_search' only: single title>", "replyText": "<1 natural sentence introducing the picks, like a knowledgeable friend>"}
 
-Possible shapes:
-{"type": "genre", "genre": "<one of: action, comedy, horror, drama, thriller, romance, science fiction, fantasy, animation, documentary, crime, mystery, war, western, family, music, history, adventure>", "keyword": "<optional single word/short phrase capturing a more specific theme or vibe, e.g. 'stoner', 'heist', 'time travel', 'revenge', 'zombie' — omit this field entirely if the request is just a plain genre with no specific theme>"}
-{"type": "similar", "title": "<a movie title mentioned by the user>"}
-{"type": "trending"}
-{"type": "top_rated"}
-{"type": "more"}
-{"type": "title_search", "title": "<whatever movie title the user seems to be searching for>"}
+Rules:
+- Use history for follow-ups ("darker", "not that one") to refine/replace prior criteria.
+- Requests for more of the same vein still use "recommend" with NEW titles not already mentioned. "more" is only for continuing a live trending/top_rated list.
+- Unclear request: use title_search with your best-guess title.`
 
-Pick the single best match. If the user is asking for additional results, another one, or more suggestions without giving new criteria, use "more". If genuinely unclear, use title_search with your best guess at a title.`
+export async function classifyIntent(message, history = []) {
+    const recentHistory = history.slice(-8)
+    const contents = [
+        ...recentHistory.map((entry) => ({
+            role: entry.role === 'user' ? 'user' : 'model',
+            parts: [{ text: entry.text }],
+        })),
+        { role: 'user', parts: [{ text: message }] },
+    ]
 
-export async function classifyIntent(message) {
     const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-            contents: [{ role: 'user', parts: [{ text: message }] }],
+            contents,
         }),
     })
 
@@ -34,6 +39,6 @@ export async function classifyIntent(message) {
     try {
         return JSON.parse(cleaned)
     } catch {
-        return { type: 'title_search', title: message }
+        return { type: 'title_search', title: message, replyText: `Here's what I found for "${message}":` }
     }
 }
