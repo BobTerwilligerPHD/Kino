@@ -1,17 +1,17 @@
 # Kino
 
-A movie suggestion chatbot that understands natural language instead of just being a search box with extra steps. Ask for a genre, describe a vibe, say "something like Memento," ask what's trending, or say "more" — it figures out what you're asking for and pulls real results from TMDB.
+A movie suggestion chatbot that recommends films the way a knowledgeable friend would, instead of just filtering a database. Describe a vibe, say "something like Memento," ask what's trending, or say "more" — Gemini reasons about actual titles to suggest, and TMDB supplies the real data behind them.
 
 **Live: https://kino-ten-wheat.vercel.app/**
 
 ## How it works
 
-Every message goes to Gemini first, which classifies it — genre, "similar to X," trending, top rated, "more," or a plain title search. Once it knows the type, it hits the right TMDB endpoint and builds a reply. TMDB always supplies the actual movie data; Gemini's only job is figuring out intent.
+Every message goes to Gemini first. For a recommendation-style request, Gemini doesn't pick a genre bucket — it names real films it would actually suggest (with a release year, to disambiguate remakes/reused titles), reasoning from mood, director, theme, or "if you liked X." The app then looks each title up on TMDB for the real poster, synopsis, and rating. Trending and top-rated requests skip Gemini's title-picking and just hit TMDB's live lists directly, since those are inherently data, not opinion.
 
 A few specifics:
 
-- Genre requests also try to catch a more specific vibe (like "stoner comedy" or "heist thriller") using TMDB's keyword system, not just the broad genre
-- "More" remembers what's already been shown and won't repeat results
+- Gemini only ever supplies title suggestions — TMDB is the sole source of factual movie data (poster, synopsis, rating)
+- "More" asks Gemini for new titles in the same vein rather than repeating a prior list, using conversation history so it knows what's already been shown
 - Light/dark theme switches automatically based on local time — no toggle, just checks the clock on load
 
 ## Tech stack
@@ -35,9 +35,10 @@ You'll need your own API keys (both free):
 - TMDB: https://www.themoviedb.org/settings/api
 - Gemini: https://aistudio.google.com/apikey
 
-Create a `.env` file in the root:
-VITE_TMDB_API_KEY=your_key_here
-VITE_GEMINI_API_KEY=your_key_here
+Copy `.env.example` to `.env` and fill in your keys:
+```bash
+cp .env.example .env
+```
 
 Then:
 
