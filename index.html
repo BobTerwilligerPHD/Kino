@@ -13,9 +13,16 @@
 />
     <script>
       (function() {
-      const hour = new Date().getHours();
-      const isDayTime = hour >= 6 && hour < 18;
-      document.documentElement.setAttribute('data-theme', isDayTime ? 'light' : 'dark')
+      const stored = localStorage.getItem('kino:theme');
+      let theme;
+      if (stored === 'light' || stored === 'dark') {
+        theme = stored;
+      } else {
+        const hour = new Date().getHours();
+        const isDayTime = hour >= 6 && hour < 18;
+        theme = isDayTime ? 'light' : 'dark';
+      }
+      document.documentElement.setAttribute('data-theme', theme)
     })()
     </script>
   </head>

@@ -1,12 +1,10 @@
 import ChatWindow from './components/ChatWindow'
+import Navbar from './components/Navbar'
 
 function App() {
   return(
     <div className="app">
-      <header className="app__header">
-      <h1>Kino</h1>
-      <p>Movie Suggestion Engine</p>
-      </header>
+      <Navbar />
       <ChatWindow />
     </div>
   )
