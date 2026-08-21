@@ -177,11 +177,11 @@ async function buildReply(intent, trimmed, lastContext) {
         case 'title_search':
         default: {
             const results = await searchMovie(intent.title || trimmed)
-            const shown = results.slice(0, 6)
+            const shown = results.slice(0, 1)
             return {
                 message: {
                     sender: 'bot',
-                    text: shown.length ? (intent.replyText || `Here's what I found for "${trimmed}":`) : `Sorry, I couldn't find anything for "${trimmed}".`,
+                    text: shown.length ? (intent.replyText || `Here's ${shown[0].title}:`) : `Sorry, I couldn't find anything for "${trimmed}".`,
                     movies: shown,
                 },
                 context: null,

@@ -1,5 +1,6 @@
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/w342';
+const LOGO_BASE = 'https://image.tmdb.org/t/p/w45';
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -23,14 +24,39 @@ export function posterUrl(path){
     return path ? `${IMG_BASE}${path}` : null
 }
 
+export function providerLogoUrl(path){
+    return path ? `${LOGO_BASE}${path}` : null
+}
+
+const watchProvidersCache = new Map()
+
+export function getWatchProviders(movieId, countryCode) {
+  const cacheKey = `${movieId}:${countryCode}`
+  if (!watchProvidersCache.has(cacheKey)) {
+    const request = tmdbFetch(`/movie/${movieId}/watch/providers`)
+      .then((data) => data.results?.[countryCode] ?? null)
+      .catch((err) => {
+        watchProvidersCache.delete(cacheKey) // don't cache failures — allow retry on next mount
+        throw err
+      })
+    watchProvidersCache.set(cacheKey, request)
+  }
+  return watchProvidersCache.get(cacheKey)
+}
+
 export async function searchMovie(query, year) {
   const data = await tmdbFetch('/search/movie', { query, primary_release_year: year })
   let results = data.results ?? []
 
   if (year && results.length === 0) {
-    // the year hint may be slightly off (Gemini misremembering) — retry without it
+    // the year hint may be slightly off (Gemini misremembering by a year) — retry without
+    // the filter, but only trust results still close to the requested year. Without this
+    // check a hallucinated/wrong year would silently fall through to an unrelated film.
     const fallback = await tmdbFetch('/search/movie', { query })
-    results = fallback.results ?? []
+    results = (fallback.results ?? []).filter((m) => {
+      const movieYear = m.release_date ? parseInt(m.release_date.slice(0, 4), 10) : null
+      return movieYear && Math.abs(movieYear - year) <= 1
+    })
   }
 
   return results.sort((a, b) => b.popularity - a.popularity)
