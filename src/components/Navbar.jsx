@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { Settings, Bookmark, History, Lock, Menu } from 'lucide-react'
+import { Settings, Bookmark, History, Lock, Menu, User } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 import WatchlistPanel from './WatchlistPanel'
+import AccountPanel from './AccountPanel'
 import MobileMenu from './MobileMenu'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Navbar() {
+    const { user } = useAuth()
     const [openPanel, setOpenPanel] = useState(null)
     const [watchlistPop, setWatchlistPop] = useState(false)
     const navRef = useRef(null)
@@ -70,8 +73,18 @@ export default function Navbar() {
                     <Settings size={18} />
                 </button>
 
+                <button
+                    type="button"
+                    className={`navbar__icon-btn ${openPanel === 'account' ? 'navbar__icon-btn--active' : ''}`}
+                    onClick={() => toggle('account')}
+                    aria-label="Account"
+                >
+                    <User size={18} fill={user ? 'currentColor' : 'none'} />
+                </button>
+
                 {openPanel === 'watchlist' && <WatchlistPanel />}
                 {openPanel === 'settings' && <SettingsPanel />}
+                {openPanel === 'account' && <AccountPanel />}
             </div>
 
             <div className="navbar__actions navbar__actions--mobile">

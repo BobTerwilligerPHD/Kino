@@ -1,10 +1,15 @@
 import { Bookmark, History, Lock } from 'lucide-react'
 import SettingsControls from './SettingsControls'
 import WatchlistContents from './WatchlistContents'
+import AccountControls from './AccountControls'
 
 export default function MobileMenu() {
     return (
         <div className="navbar__panel navbar__panel--mobile">
+            <div className="mobile-menu__section">
+                <AccountControls />
+            </div>
+
             <div className="mobile-menu__section">
                 <p className="navbar__panel-title">
                     <Bookmark size={16} /> Watchlist
