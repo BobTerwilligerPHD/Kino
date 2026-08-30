@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { AuthContext } from './authContextInstance'
+import { migrateLocalWatchlistToCloud } from '../lib/watchlist'
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null)
@@ -12,8 +13,13 @@ export function AuthProvider({ children }) {
             setLoading(false)
         })
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             setUser(session?.user ?? null)
+            if (event === 'SIGNED_IN' && session?.user) {
+                migrateLocalWatchlistToCloud(session.user.id).catch((err) => {
+                    console.error('Watchlist migration failed:', err)
+                })
+            }
         })
 
         return () => subscription.unsubscribe()

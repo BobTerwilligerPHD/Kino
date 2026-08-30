@@ -4,14 +4,30 @@ import { posterUrl, providerLogoUrl, getWatchProviders } from '../services/tmdb'
 import { getCountry } from '../lib/settings'
 import { isSaved, toggleWatchlist } from '../lib/watchlist'
 import { isRecentRelease, showtimesSearchUrl } from '../lib/showtimes'
+import { useAuth } from '../hooks/useAuth'
 
 export default function MovieCard({ movie }) {
+  const { user } = useAuth()
   const year = movie.release_date ? movie.release_date.slice(0, 4) : '—'
   const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'
 
-  const [saved, setSaved] = useState(() => isSaved(movie.id))
+  const [saved, setSaved] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
   const [providers, setProviders] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    isSaved(movie.id, user?.id)
+      .then((result) => {
+        if (!cancelled) setSaved(result)
+      })
+      .catch(() => {
+        if (!cancelled) setSaved(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [movie.id, user?.id])
 
   useEffect(() => {
     let cancelled = false
@@ -27,8 +43,8 @@ export default function MovieCard({ movie }) {
     }
   }, [movie.id])
 
-  function handleToggleSave() {
-    const nowSaved = toggleWatchlist(movie)
+  async function handleToggleSave() {
+    const nowSaved = await toggleWatchlist(movie, user?.id)
     setSaved(nowSaved)
     if (nowSaved) {
       setJustSaved(true)

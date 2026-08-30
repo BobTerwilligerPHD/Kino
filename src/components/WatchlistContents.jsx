@@ -1,14 +1,41 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { posterUrl } from '../services/tmdb'
 import { getWatchlist, removeFromWatchlist } from '../lib/watchlist'
+import { useAuth } from '../hooks/useAuth'
 
 export default function WatchlistContents() {
-    const [items, setItems] = useState(getWatchlist)
+    const { user } = useAuth()
+    const [items, setItems] = useState([])
+    const [loading, setLoading] = useState(true)
 
-    function handleRemove(id) {
-        removeFromWatchlist(id)
-        setItems(getWatchlist())
+    useEffect(() => {
+        let cancelled = false
+        getWatchlist(user?.id)
+            .then((result) => {
+                if (!cancelled) {
+                    setItems(result)
+                    setLoading(false)
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setItems([])
+                    setLoading(false)
+                }
+            })
+        return () => {
+            cancelled = true
+        }
+    }, [user?.id])
+
+    async function handleRemove(id) {
+        await removeFromWatchlist(id, user?.id)
+        setItems((prev) => prev.filter((m) => m.id !== id))
+    }
+
+    if (loading) {
+        return <p className="watchlist-panel__empty">Loading…</p>
     }
 
     if (items.length === 0) {
