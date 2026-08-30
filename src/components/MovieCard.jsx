@@ -44,11 +44,15 @@ export default function MovieCard({ movie }) {
   }, [movie.id])
 
   async function handleToggleSave() {
-    const nowSaved = await toggleWatchlist(movie, user?.id)
-    setSaved(nowSaved)
-    if (nowSaved) {
-      setJustSaved(true)
-      setTimeout(() => setJustSaved(false), 400)
+    try {
+      const nowSaved = await toggleWatchlist(movie, user?.id)
+      setSaved(nowSaved)
+      if (nowSaved) {
+        setJustSaved(true)
+        setTimeout(() => setJustSaved(false), 400)
+      }
+    } catch (err) {
+      console.error('Failed to update watchlist:', err)
     }
   }
 
