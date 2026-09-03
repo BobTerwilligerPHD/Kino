@@ -1,57 +1,62 @@
 # Kino
 
-A movie suggestion chatbot that recommends films the way a knowledgeable friend would, instead of just filtering a database. Describe a vibe, say "something like Memento," ask what's trending, or say "more" — Gemini reasons about actual titles to suggest, and TMDB supplies the real data behind them.
+A conversational movie recommendation companion. Kino talks like a
+knowledgeable friend — opinionated, limited picks with a reason attached —
+rather than presenting a search/database interface. It's a React + Vite
+single-page app backed by TMDB (movie data), Gemini (conversational
+reasoning), and Supabase (auth + watchlist).
 
-**Live: https://kino-ten-wheat.vercel.app/**
+## Stack
 
-## How it works
+- **Frontend**: React 19, Vite, plain CSS (no component/CSS framework)
+- **Conversation**: Google Gemini, proxied through a small Vercel serverless
+  function (`api/gemini.js`) — the API key never reaches the browser
+- **Movie data**: TMDB, called directly from the client
+- **Auth / watchlist**: Supabase (Postgres + Auth + RLS)
+- **Tests**: Vitest
 
-Every message goes to Gemini first. For a recommendation-style request, Gemini doesn't pick a genre bucket — it names real films it would actually suggest (with a release year, to disambiguate remakes/reused titles), reasoning from mood, director, theme, or "if you liked X." The app then looks each title up on TMDB for the real poster, synopsis, and rating. Trending and top-rated requests skip Gemini's title-picking and just hit TMDB's live lists directly, since those are inherently data, not opinion.
+See [`docs/architecture.md`](docs/architecture.md) for the reasoning behind
+several non-obvious design decisions (conversation state, the Gemini
+validation boundary, title/year matching, persistence versioning).
 
-A few specifics:
+## Local development
 
-- Gemini only ever supplies title suggestions — TMDB is the sole source of factual movie data (poster, synopsis, rating)
-- "More" asks Gemini for new titles in the same vein rather than repeating a prior list, using conversation history so it knows what's already been shown
-- Light/dark theme switches automatically based on local time — no toggle, just checks the clock on load
-
-## Tech stack
-
-- **React + Vite** — frontend
-- **TMDB API** — movie data, posters, genres, keywords, recommendations
-- **Gemini API** (`gemini-3.5-flash-lite`) — intent classification
-- **Lucide React** — icons
-- Deployed on **Vercel**
-
-## Running it locally
+Copy `.env.example` to `.env` and fill in your own keys (TMDB, Supabase, and
+a server-only `GEMINI_API_KEY` — see the comments in `.env.example` for
+which variables are client-exposed vs. server-only).
 
 ```bash
-git clone https://github.com/BobTerwilligerPHD/Kino.git
-cd Kino
 npm install
-```
-
-You'll need your own API keys (both free):
-
-- TMDB: https://www.themoviedb.org/settings/api
-- Gemini: https://aistudio.google.com/apikey
-
-Copy `.env.example` to `.env` and fill in your keys:
-```bash
-cp .env.example .env
-```
-
-Then:
-
-```bash
 npm run dev
 ```
 
-## Known limitations
+`npm run dev` runs `npx vercel dev`, which serves the frontend **and**
+`/api/gemini` together — this is the command you want for anything that
+involves chat, since plain Vite doesn't run serverless functions. It uses the
+Vercel CLI via `npx` (not installed as a project dependency); the first run
+may prompt you to log in and link the project.
 
-- No accounts or saved history — every session starts fresh
-- Runs entirely client-side, so both API keys are visible in the browser bundle
-- Free-tier Gemini rate limits mean heavy testing can trip a 429
+If you only need to iterate on styling/layout and don't need a working chat
+request, `npm run dev:vite` runs the plain Vite dev server and starts faster.
 
-## What's next
+Other scripts:
 
-Considering optional accounts with a preference survey to bias suggestions, and letting people upload a Letterboxd export to factor in watch history (their live API isn't open to projects like this). Would need real backend/auth work, so it's parked for now.
+```bash
+npm test      # run the Vitest suite
+npm run lint  # eslint
+npm run build # production build
+```
+
+## Deployment
+
+Deployed on Vercel. `api/gemini.js` requires a `GEMINI_API_KEY` environment
+variable set in the Vercel project settings (server-side only — do not
+prefix it with `VITE_`). `VITE_TMDB_API_KEY`, `VITE_SUPABASE_URL`, and
+`VITE_SUPABASE_PUBLISHABLE_KEY` are client-side and safe to expose (the
+Supabase key is a publishable key protected by row-level security; TMDB has
+no meaningful per-request secrecy requirement for this use case).
+
+## Database
+
+Supabase migrations live in `supabase/migrations/`, applied in order. RLS is
+enabled on every table; policies scope all access to `auth.uid()`.

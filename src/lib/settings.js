@@ -31,7 +31,7 @@ export function detectCountry() {
         const region = new Intl.Locale(navigator.language).maximize().region
         if (region) return region
     } catch {
-        // Intl.Locale unsupported or locale unparsable — fall through
+        // Intl.Locale unsupported/unparsable — fall through to the manual parse
     }
     const parts = (navigator.language || 'en-US').split('-')
     return parts[1] ? parts[1].toUpperCase() : 'US'
@@ -43,4 +43,5 @@ export function getCountry() {
 
 export function setCountry(code) {
     localStorage.setItem(COUNTRY_KEY, code)
+    window.dispatchEvent(new CustomEvent('kino:country-change'))
 }

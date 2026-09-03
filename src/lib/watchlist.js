@@ -75,7 +75,7 @@ export async function addToWatchlist(movie, userId) {
         }
     } else {
         const { error } = await supabase.from('watchlist').insert(toRow(movie, userId))
-        if (error && error.code !== '23505') throw error // 23505 = already saved, fine
+        if (error && error.code !== '23505') throw error // 23505: unique violation — already saved, ignore
     }
     window.dispatchEvent(new CustomEvent('kino:watchlist-add'))
 }

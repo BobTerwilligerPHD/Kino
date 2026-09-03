@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Settings, Bookmark, History, Lock, Menu, User } from 'lucide-react'
+import { Settings, Bookmark, History, Lock, Menu, User, SquarePen } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 import WatchlistPanel from './WatchlistPanel'
 import AccountPanel from './AccountPanel'
@@ -35,6 +35,11 @@ export default function Navbar() {
         setOpenPanel((prev) => (prev === panel ? null : panel))
     }
 
+    function startNewChat() {
+        window.dispatchEvent(new CustomEvent('kino:new-chat'))
+        setOpenPanel(null)
+    }
+
     return (
         <div className="navbar" ref={navRef}>
             <div className="app__header">
@@ -43,6 +48,15 @@ export default function Navbar() {
             </div>
 
             <div className="navbar__actions navbar__actions--desktop">
+                <button
+                    type="button"
+                    className="navbar__icon-btn"
+                    onClick={startNewChat}
+                    aria-label="Start new conversation"
+                >
+                    <SquarePen size={18} />
+                </button>
+
                 <button
                     type="button"
                     className={`navbar__icon-btn ${openPanel === 'watchlist' ? 'navbar__icon-btn--active' : ''} ${watchlistPop ? 'navbar__icon-btn--pop' : ''}`}
@@ -88,6 +102,15 @@ export default function Navbar() {
             </div>
 
             <div className="navbar__actions navbar__actions--mobile">
+                <button
+                    type="button"
+                    className="navbar__icon-btn"
+                    onClick={startNewChat}
+                    aria-label="Start new conversation"
+                >
+                    <SquarePen size={20} />
+                </button>
+
                 <button
                     type="button"
                     className={`navbar__icon-btn ${openPanel === 'mobile-menu' ? 'navbar__icon-btn--active' : ''} ${watchlistPop ? 'navbar__icon-btn--pop' : ''}`}
